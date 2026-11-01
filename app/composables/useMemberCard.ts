@@ -4,6 +4,7 @@ import type {
   MemberCardApplication,
   MemberCardApplicationForm,
   MemberCardApplicationPage,
+  MemberCardCreate,
   MemberCardOverview,
   MemberCardPage,
   MemberCardStatus,
@@ -45,8 +46,22 @@ export function useMemberCard() {
     })
   }
 
-  async function fetchCards(page = 0, size = 20) {
-    return await $fetch<MemberCardPage>('/api/admin/member-cards', { query: { page: String(page), size: String(size) } })
+  async function fetchCards(search = '', page = 0, size = 20) {
+    return await $fetch<MemberCardPage>('/api/admin/member-cards', {
+      query: { search, page: String(page), size: String(size) }
+    })
+  }
+
+  async function createCard(card: MemberCardCreate) {
+    return await $fetch<MemberCard>('/api/admin/member-cards', { method: 'POST', body: card })
+  }
+
+  async function updateCard(id: number, holderName: string) {
+    return await $fetch<MemberCard>(`/api/admin/member-cards/${id}`, { method: 'PUT', body: { holderName } })
+  }
+
+  async function deleteCard(id: number) {
+    return await $fetch(`/api/admin/member-cards/${id}`, { method: 'DELETE' })
   }
 
   async function fetchCardTransactions(id: number, page = 0, size = 20) {
@@ -74,6 +89,9 @@ export function useMemberCard() {
     approveApplication,
     rejectApplication,
     fetchCards,
+    createCard,
+    updateCard,
+    deleteCard,
     fetchCardTransactions,
     setCardStatus,
     adjustBalance

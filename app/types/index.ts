@@ -641,6 +641,12 @@ export interface MemberCardTransaction {
   createdAt: string
 }
 
+export interface MemberCardCreate {
+  studentId: number
+  holderName: string
+  openingBalance?: number
+}
+
 export interface MemberCardAdjustment {
   type: 'TOP_UP' | 'DEDUCTION'
   amount: number
