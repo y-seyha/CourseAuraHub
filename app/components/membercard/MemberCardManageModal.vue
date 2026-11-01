@@ -23,6 +23,14 @@
             </button>
           </div>
 
+          <form class="mt-4 flex items-end gap-2" @submit.prevent="saveName">
+            <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+              <label :class="labelClass" for="card-holder">Holder Name</label>
+              <input id="card-holder" v-model="holderName" type="text" required maxlength="150" :class="inputClass">
+            </div>
+            <button type="submit" :class="secondaryButton" class="py-2.75" :disabled="working || !nameChanged">Save</button>
+          </form>
+
           <form class="mt-4 flex flex-col gap-3 rounded-xl border border-white/8 bg-white/3 p-3.5 light:border-slate-200 light:bg-slate-50" @submit.prevent="submit">
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div class="flex min-w-0 flex-col gap-1.5">
@@ -40,7 +48,7 @@
             </div>
             <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 self-end rounded-[10px] border border-violet-500/40 bg-linear-to-br from-violet-600 to-indigo-600 px-5 py-2 text-[13px] font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-50" :disabled="working || !canSubmit">
               <Loader2 v-if="working" :size="16" class="animate-spin" />
-              {{ form.type === 'TOP_UP' ? 'Top Up' : 'Deduct' }}
+              {{ form.type === 'TOP_UP' ? 'Add Money' : 'Deduct' }}
             </button>
           </form>
 
@@ -49,6 +57,15 @@
             <p v-if="historyError" class="mt-2 text-[13px] text-rose-400">{{ historyError }}</p>
             <MemberCardHistory v-else :transactions="transactions" :currency="card.currency" />
           </section>
+
+          <div class="mt-4 flex items-center justify-between gap-3 border-t border-white/8 pt-4 light:border-slate-200">
+            <p class="text-xs text-white/40 light:text-slate-500">
+              {{ canDelete ? 'This card hasn\'t been used, so it can be deleted.' : 'A card with transactions can\'t be deleted. Suspend it instead.' }}
+            </p>
+            <button type="button" class="shrink-0 cursor-pointer rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.75 text-xs font-semibold text-rose-400 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 light:border-rose-200 light:bg-rose-50 light:text-rose-600" :disabled="working || !canDelete" @click="$emit('delete')">
+              Delete Card
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -71,10 +88,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close' | 'changed'): void
+  (e: 'close' | 'changed' | 'delete'): void
 }>()
 
-const { adjustBalance, fetchCardTransactions, setCardStatus } = useMemberCard()
+const { adjustBalance, fetchCardTransactions, setCardStatus, updateCard } = useMemberCard()
 const toast = useAppToast()
 
 const dialogRef = ref<HTMLElement | null>(null)
@@ -97,7 +114,7 @@ const inputClass = 'w-full rounded-[10px] border border-white/10 bg-white/4 px-3
 const secondaryButton = 'cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.75 text-xs font-semibold text-white/75 transition-colors hover:bg-white/9 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200 light:bg-slate-100 light:text-slate-700'
 
 const typeOptions = [
-  { value: 'TOP_UP', label: 'Top-up' },
+  { value: 'TOP_UP', label: 'Add money' },
   { value: 'DEDUCTION', label: 'Deduction' }
 ]
 
@@ -111,6 +128,12 @@ const idempotencyKey = ref('')
 const working = ref(false)
 const transactions = ref<MemberCardTransaction[]>([])
 const historyError = ref('')
+const historyLoaded = ref(false)
+const holderName = ref('')
+
+const nameChanged = computed(() => Boolean(holderName.value.trim()) && holderName.value.trim() !== props.card?.holderName)
+// The server has the final say; this only spares the admin a refused request
+const canDelete = computed(() => historyLoaded.value && !transactions.value.length)
 
 const canSubmit = computed(() => Number(form.amount) > 0 && Boolean(form.note.trim()))
 
@@ -125,6 +148,7 @@ async function loadHistory(id: number) {
   historyError.value = ''
   try {
     transactions.value = (await fetchCardTransactions(id, 0, 50)).items
+    historyLoaded.value = true
   } catch (err) {
     historyError.value = getErrorMessage(err, 'Unable to load this card\'s history')
   }
@@ -132,10 +156,26 @@ async function loadHistory(id: number) {
 
 watch(() => props.card?.id, (id) => {
   transactions.value = []
+  historyLoaded.value = false
   if (id === undefined) return
+  holderName.value = props.card?.holderName ?? ''
   resetForm()
   loadHistory(id)
 })
+
+async function saveName() {
+  if (!props.card) return
+  working.value = true
+  try {
+    await updateCard(props.card.id, holderName.value.trim())
+    toast.success('Card Updated')
+    emit('changed')
+  } catch (err) {
+    toast.error('Card Not Updated', getErrorMessage(err, 'Unable to update this card'))
+  } finally {
+    working.value = false
+  }
+}
 
 async function submit() {
   if (!props.card) return
@@ -147,7 +187,7 @@ async function submit() {
       note: form.note.trim(),
       idempotencyKey: idempotencyKey.value
     })
-    toast.success(form.type === 'TOP_UP' ? 'Balance Topped Up' : 'Balance Deducted')
+    toast.success(form.type === 'TOP_UP' ? 'Money Added' : 'Balance Deducted')
     resetForm()
     emit('changed')
     await loadHistory(props.card.id)
