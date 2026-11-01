@@ -1,4 +1,4 @@
-import type { AdminOrderPage, Order } from '~/types'
+import type { AdminOrderPage, CouponPreview, Order } from '~/types'
 
 /** Learner checkout and order history, plus the admin order list. */
 export function useOrders() {
@@ -14,6 +14,15 @@ export function useOrders() {
     return await $fetch<Order>(`/api/me/orders/${encodeURIComponent(orderNumber)}/cancel`, { method: 'POST' })
   }
 
+  // Buys one course on its own, leaving anything else in the cart alone
+  async function checkoutCourse(courseSlug: string, couponCode?: string) {
+    return await $fetch<Order>('/api/me/orders', { method: 'POST', body: { courseSlug, couponCode } })
+  }
+
+  async function previewCourseCoupon(courseSlug: string, code: string) {
+    return await $fetch<CouponPreview>('/api/me/coupons/preview', { method: 'POST', body: { courseSlug, code } })
+  }
+
   async function fetchAdminOrders(status: string, page: number, size = 20) {
     return await $fetch<AdminOrderPage>('/api/admin/orders', { query: { status, page: String(page), size: String(size) } })
   }
@@ -23,7 +32,7 @@ export function useOrders() {
   }
 
   return {
-    fetchMyOrders,
+    checkoutCourse, previewCourseCoupon, fetchMyOrders,
     fetchMyOrder,
     cancelOrder,
     fetchAdminOrders,

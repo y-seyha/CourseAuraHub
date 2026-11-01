@@ -57,7 +57,9 @@
 
     <!-- Student Table -->
     <div v-if="pending" class="h-100 w-full animate-pulse rounded-[18px] bg-white/5 light:bg-slate-100" />
-    <StudentTable v-else :students="students" />
+    <StudentTable v-else :students="students" @select="selectedStudentId = $event" />
+
+    <StudentDetailModal :student-id="selectedStudentId" @close="selectedStudentId = null" />
   </div>
 </template>
 
@@ -65,6 +67,7 @@
 import { Users, UserCheck, DollarSign, GraduationCap, RefreshCw } from 'lucide-vue-next'
 import type { Student } from '~/types'
 import StatCard from '~/components/shared/StatCard.vue'
+import StudentDetailModal from '~/components/students/StudentDetailModal.vue'
 import StudentTable from '~/components/students/StudentTable.vue'
 import { useAppToast } from '~/composables/useAppToast'
 
@@ -76,6 +79,7 @@ useHead({
 
 const { info, error } = useAppToast()
 const isRefreshing = ref(false)
+const selectedStudentId = ref<number | null>(null)
 const { data, pending, refresh } = await useAsyncData<Student[]>(
   'students-list',
   () => $fetch(`/api/students?_t=${Date.now()}`),
