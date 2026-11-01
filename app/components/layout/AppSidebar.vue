@@ -167,10 +167,15 @@ const navSections = computed(() => {
           { to: '/my-learning', label: 'My Learning', icon: GraduationCap },
           { to: '/courses', label: 'Browse Courses', icon: BookOpen },
           { to: '/wishlist', label: 'Wishlist', icon: Heart },
+          { to: '/achievements', label: 'Achievements', icon: Trophy },
+        ],
+      },
+      {
+        label: 'Purchases',
+        items: [
           { to: '/cart', label: 'Cart', icon: ShoppingCart },
           { to: '/orders', label: 'My Orders', icon: Receipt },
           { to: '/member-card', label: 'Member Card', icon: CreditCard },
-          { to: '/achievements', label: 'Achievements', icon: Trophy },
         ],
       },
       {
@@ -205,6 +210,11 @@ const navSections = computed(() => {
       items: [
         { to: '/admin/orders', label: 'Orders', icon: Receipt },
         { to: '/admin/member-cards', label: 'Member Cards', icon: CreditCard },
+      ],
+    },
+    {
+      label: 'Promotions',
+      items: [
         { to: '/admin/discounts', label: 'Discounts', icon: Tag },
         { to: '/admin/coupons', label: 'Coupons', icon: TicketPercent },
       ],
