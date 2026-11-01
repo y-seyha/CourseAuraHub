@@ -116,6 +116,7 @@ import {
   BarChart3,
   Bell,
   GraduationCap,
+  UserPlus,
   Heart,
   Receipt,
   ShieldAlert,
@@ -194,6 +195,7 @@ const navSections = computed(() => {
       items: [
         { to: '/courses', label: 'Courses', icon: BookOpen },
         { to: '/students', label: 'Students', icon: GraduationCap },
+        { to: '/admin/enrollments', label: 'Enrollments', icon: UserPlus },
       ],
     },
     {

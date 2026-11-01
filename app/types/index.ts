@@ -184,6 +184,8 @@ export interface Student {
   status: 'active' | 'inactive'
   completedCourses: number[]
   country: string
+  // The sign-in account; null for sample learners without one
+  userId: string | null
 }
 
 export interface Enrollment {
@@ -564,4 +566,28 @@ export interface StoredFile {
   contentType: string
   size: number
   fileName: string
+}
+
+export interface CouponPreview {
+  code: string
+  listAmount: number
+  discountAmount: number
+  finalAmount: number
+}
+
+export interface AccountSecurity {
+  userId: string
+  email: string
+  enabled: boolean
+  emailVerified: boolean
+  mfaEnabled: boolean
+  lockedUntil: string | null
+  failedLoginAttempts: number
+}
+
+export interface EnrollmentCreate {
+  studentId: number
+  courseId: number
+  amount: number
+  enrolledAt?: string
 }

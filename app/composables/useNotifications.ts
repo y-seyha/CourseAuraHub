@@ -34,6 +34,12 @@ export function useNotifications() {
     await loadPage(nextPage.value)
   }
 
+  // Keeps the badge right when the stream is slow to open or can't connect
+  async function loadUnreadCount() {
+    const result = await $fetch<{ unreadCount: number }>('/api/me/notifications/unread-count')
+    unreadCount.value = result.unreadCount
+  }
+
   function onNotification(event: MessageEvent<string>) {
     const { notification, unreadCount: count } = JSON.parse(event.data) as NotificationStreamEvent
     unreadCount.value = count
@@ -63,7 +69,7 @@ export function useNotifications() {
     reconnectTimer = null
     closeStream()
     try {
-      await loadPage(0)
+      await Promise.all([loadPage(0), loadUnreadCount()])
       openStream()
     } catch {
       reconnectTimer = setTimeout(reconnect, RECONNECT_DELAY_MS)
@@ -79,7 +85,7 @@ export function useNotifications() {
     if (source) return
     items.value = []
     openStream()
-    await loadPage(0).catch(() => {})
+    await Promise.all([loadPage(0), loadUnreadCount()]).catch(() => {})
   }
 
   function disconnect() {

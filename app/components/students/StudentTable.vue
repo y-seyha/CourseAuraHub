@@ -52,7 +52,7 @@
               <div class="flex items-center gap-3">
                 <img :src="student.avatar" :alt="student.name" class="size-9.5 shrink-0 rounded-full border-2 border-violet-500/40 bg-violet-500/20" >
                 <div class="flex flex-col">
-                  <span class="font-semibold text-slate-50 light:text-slate-900">{{ student.name }}</span>
+                  <button type="button" class="cursor-pointer text-left font-semibold text-slate-50 hover:text-violet-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 light:text-slate-900 light:hover:text-violet-700" @click="$emit('select', student.id)">{{ student.name }}</button>
                   <span class="text-[11px] text-white/40 light:text-slate-500">{{ student.email }}</span>
                 </div>
               </div>
@@ -115,6 +115,10 @@ import AppDropdown from '~/components/shared/AppDropdown.vue'
 
 const props = defineProps<{
   students: Student[]
+}>()
+
+defineEmits<{
+  (e: 'select', id: number): void
 }>()
 
 const searchQuery = ref('')

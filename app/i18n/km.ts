@@ -298,6 +298,8 @@ export const km: Record<string, string> = {
   'Weekly report': 'របាយការណ៍ប្រចាំសប្តាហ៍',
   'You\'re all caught up': 'អ្នកបានមើលគ្រប់យ៉ាងហើយ',
   'You\'re enrolled': 'អ្នកបានចុះឈ្មោះរួចហើយ',
+  'Back to course': 'ត្រឡប់ទៅវគ្គសិក្សា',
+  'Review your course, then pay.': 'ពិនិត្យវគ្គសិក្សារបស់អ្នក រួចបង់ប្រាក់។',
   'File uploaded': 'បានផ្ទុកឯកសារឡើង',
   'JPG, PNG or WebP, up to 5 MB': 'JPG, PNG ឬ WebP មិនលើសពី 5 MB',
   'MP4, WebM or PDF, up to 2 GB': 'MP4, WebM ឬ PDF មិនលើសពី 2 GB',

@@ -307,16 +307,8 @@ async function addToCart() {
   }
 }
 
-async function buyNow() {
-  checkingOut.value = true
-  try {
-    await cart.add(props.course.slug)
-    await router.push('/checkout')
-  } catch (err) {
-    toast.error(t('Checkout failed'), getErrorMessage(err, t('Unable to start checkout')))
-  } finally {
-    checkingOut.value = false
-  }
+function buyNow() {
+  return router.push({ path: '/checkout', query: { course: props.course.slug } })
 }
 
 async function toggleWishlist() {

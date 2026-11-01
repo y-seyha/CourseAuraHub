@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col gap-5">
     <div>
-      <NuxtLink to="/cart" class="inline-flex items-center gap-1 text-xs font-semibold text-white/50 no-underline hover:text-white light:text-slate-500 light:hover:text-slate-900">
-        <ArrowLeft :size="14" /> {{ t('Back to cart') }}
+      <NuxtLink :to="courseSlug ? `/courses/${courseSlug}` : '/cart'" class="inline-flex items-center gap-1 text-xs font-semibold text-white/50 no-underline hover:text-white light:text-slate-500 light:hover:text-slate-900">
+        <ArrowLeft :size="14" /> {{ courseSlug ? t('Back to course') : t('Back to cart') }}
       </NuxtLink>
       <h1 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-50 sm:text-[26px] light:text-slate-900">{{ t('Checkout') }}</h1>
-      <p class="mt-1 text-[13px] text-white/45 light:text-slate-500">{{ t('Review your courses, then pay once for all of them.') }}</p>
+      <p class="mt-1 text-[13px] text-white/45 light:text-slate-500">{{ courseSlug ? t('Review your course, then pay.') : t('Review your courses, then pay once for all of them.') }}</p>
     </div>
 
     <div v-if="pending" class="h-40 animate-pulse rounded-2xl bg-white/5 light:bg-slate-100" />
@@ -14,13 +14,13 @@
       {{ loadError }}
     </p>
 
-    <div v-else-if="cart?.items.length" class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+    <div v-else-if="items.length" class="grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div class="flex flex-col gap-5 lg:col-span-2">
         <section class="rounded-[18px] border border-white/10 bg-white/5 p-5 light:border-slate-200 light:bg-white">
           <h2 class="text-base font-bold text-slate-100 light:text-slate-900">{{ t('Courses') }}</h2>
           <ul class="m-0 mt-3 flex list-none flex-col p-0">
             <li
-              v-for="item in cart.items"
+              v-for="item in items"
               :key="item.courseId"
               class="flex items-center justify-between gap-4 border-b border-white/6 py-3 last:border-b-0 light:border-slate-100"
             >
@@ -28,7 +28,7 @@
                 <p class="truncate text-[13px] font-semibold text-slate-100 light:text-slate-900">{{ item.title }}</p>
                 <p class="text-[11px] text-white/45 light:text-slate-500">{{ item.instructor }}</p>
               </div>
-              <span class="shrink-0 text-[13px] font-bold text-slate-100 light:text-slate-900">{{ formatMoney(item.price, cart.currency) }}</span>
+              <span class="shrink-0 text-[13px] font-bold text-slate-100 light:text-slate-900">{{ formatMoney(item.price, currency) }}</span>
             </li>
           </ul>
         </section>
@@ -65,15 +65,15 @@
         <dl class="mt-4 flex flex-col gap-2 text-[13px]">
           <div class="flex justify-between text-white/60 light:text-slate-600">
             <dt>{{ t('Subtotal') }}</dt>
-            <dd>{{ formatMoney(cart.total, cart.currency) }}</dd>
+            <dd>{{ formatMoney(subtotal, currency) }}</dd>
           </div>
           <div v-if="preview" class="flex justify-between text-emerald-400 light:text-emerald-700">
             <dt>{{ t('Coupon discount') }}</dt>
-            <dd>-{{ formatMoney(preview.couponDiscount, cart.currency) }}</dd>
+            <dd>-{{ formatMoney(preview.couponDiscount, currency) }}</dd>
           </div>
           <div class="mt-1 flex justify-between border-t border-white/8 pt-3 text-base font-extrabold text-slate-50 light:border-slate-200 light:text-slate-900">
             <dt>{{ t('Total') }}</dt>
-            <dd>{{ formatMoney(total, cart.currency) }}</dd>
+            <dd>{{ formatMoney(total, currency) }}</dd>
           </div>
         </dl>
         <button
@@ -84,7 +84,7 @@
         >
           <Loader2 v-if="paying" :size="16" class="animate-spin" />
           <Lock v-else :size="15" />
-          {{ total > 0 ? t('Pay {amount}', { amount: formatMoney(total, cart.currency) }) : t('Complete order') }}
+          {{ total > 0 ? t('Pay {amount}', { amount: formatMoney(total, currency) }) : t('Complete order') }}
         </button>
         <p class="mt-2 text-center text-[11px] text-white/40 light:text-slate-500">{{ t('You get access as soon as your payment is confirmed.') }}</p>
       </aside>
@@ -94,33 +94,56 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Loader2, Lock } from 'lucide-vue-next'
-import type { CartCouponPreview } from '~/types'
+import type { CartCouponPreview, Course } from '~/types'
 import { formatMoney, useCart } from '~/composables/useCart'
+import { useOrders } from '~/composables/useOrders'
 import { useAppToast } from '~/composables/useAppToast'
 import { getErrorMessage } from '~/utils/apiError'
 
 const { t } = useT()
 useHead({ title: () => t('Checkout') })
 
+const route = useRoute()
 const router = useRouter()
 const toast = useAppToast()
 const { cart, refresh, previewCoupon, checkout } = useCart()
+const { checkoutCourse, previewCourseCoupon } = useOrders()
+
+// Buy now passes one course; without it, this page checks out the whole cart
+const courseSlug = computed(() => typeof route.query.course === 'string' ? route.query.course : '')
+const course = ref<Course | null>(null)
 
 const pending = ref(true)
 const loadError = ref('')
 const code = ref('')
-const preview = ref<CartCouponPreview | null>(null)
+const preview = ref<Pick<CartCouponPreview, 'code' | 'courseTitle' | 'couponDiscount' | 'total'> | null>(null)
 const applying = ref(false)
 const couponError = ref('')
 const paying = ref(false)
 
-const total = computed(() => preview.value?.total ?? cart.value?.total ?? 0)
+const items = computed(() => course.value
+  ? [{ courseId: course.value.id, title: course.value.title, instructor: course.value.instructor, price: course.value.price }]
+  : cart.value?.items ?? [])
+const currency = computed(() => cart.value?.currency)
+const subtotal = computed(() => course.value ? course.value.price : cart.value?.total ?? 0)
+const total = computed(() => preview.value?.total ?? subtotal.value)
+
+async function fetchPreview(couponCode: string) {
+  if (!course.value) return await previewCoupon(couponCode)
+  const single = await previewCourseCoupon(course.value.slug, couponCode)
+  return {
+    code: single.code,
+    courseTitle: course.value.title,
+    couponDiscount: single.discountAmount,
+    total: single.finalAmount
+  }
+}
 
 async function applyCoupon() {
   applying.value = true
   couponError.value = ''
   try {
-    preview.value = await previewCoupon(code.value.trim())
+    preview.value = await fetchPreview(code.value.trim())
   } catch (err) {
     preview.value = null
     couponError.value = getErrorMessage(err, t('This coupon can\'t be used'))
@@ -138,7 +161,9 @@ function removeCoupon() {
 async function pay() {
   paying.value = true
   try {
-    const result = await checkout(preview.value?.code)
+    const result = course.value
+      ? await checkoutCourse(course.value.slug, preview.value?.code)
+      : await checkout(preview.value?.code)
     if (result.checkoutUrl) {
       await navigateTo(result.checkoutUrl, { external: true })
       return
@@ -157,7 +182,11 @@ async function pay() {
 onMounted(async () => {
   try {
     const current = await refresh()
-    if (!current.items.length) await router.replace('/cart')
+    if (courseSlug.value) {
+      course.value = await $fetch<Course>(`/api/courses/${encodeURIComponent(courseSlug.value)}`)
+    } else if (!current.items.length) {
+      await router.replace('/cart')
+    }
   } catch (err) {
     loadError.value = getErrorMessage(err, t('Unable to load your cart'))
   } finally {
