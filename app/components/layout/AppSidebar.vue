@@ -118,6 +118,7 @@ import {
   GraduationCap,
   UserPlus,
   Heart,
+  CreditCard,
   Receipt,
   ShieldAlert,
   ShieldCheck,
@@ -168,6 +169,7 @@ const navSections = computed(() => {
           { to: '/wishlist', label: 'Wishlist', icon: Heart },
           { to: '/cart', label: 'Cart', icon: ShoppingCart },
           { to: '/orders', label: 'My Orders', icon: Receipt },
+          { to: '/member-card', label: 'Member Card', icon: CreditCard },
           { to: '/achievements', label: 'Achievements', icon: Trophy },
         ],
       },
@@ -202,6 +204,7 @@ const navSections = computed(() => {
       label: 'Sales',
       items: [
         { to: '/admin/orders', label: 'Orders', icon: Receipt },
+        { to: '/admin/member-cards', label: 'Member Cards', icon: CreditCard },
         { to: '/admin/discounts', label: 'Discounts', icon: Tag },
         { to: '/admin/coupons', label: 'Coupons', icon: TicketPercent },
       ],
@@ -242,6 +245,8 @@ function isActive(to: string) {
   if (to === '/admin') return route.path === '/admin'
   // The lesson player belongs to My Learning
   if (to === '/my-learning' && route.path.startsWith('/learn/')) return true
+  // Profile shares its prefix with the other account pages
+  if (to === '/account') return route.path === to
   return route.path.startsWith(to)
 }
 

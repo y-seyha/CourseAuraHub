@@ -1,4 +1,4 @@
-import type { Cart, CartCouponPreview, CheckoutResult } from '~/types'
+import type { Cart, CartCouponPreview, CheckoutResult, PaymentMethod } from '~/types'
 
 /** The learner's cart. One copy per app, so the header count follows every change. */
 export function useCart() {
@@ -30,8 +30,8 @@ export function useCart() {
     return await $fetch<CartCouponPreview>('/api/me/cart/coupon-preview', { method: 'POST', body: { code } })
   }
 
-  async function checkout(couponCode?: string) {
-    return await $fetch<CheckoutResult>('/api/me/cart/checkout', { method: 'POST', body: { couponCode } })
+  async function checkout(couponCode?: string, paymentMethod?: PaymentMethod) {
+    return await $fetch<CheckoutResult>('/api/me/cart/checkout', { method: 'POST', body: { couponCode, paymentMethod } })
   }
 
   return { cart, count, refresh, clear, add, remove, contains, previewCoupon, checkout }

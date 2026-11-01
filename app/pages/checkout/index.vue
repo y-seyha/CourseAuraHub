@@ -33,6 +33,25 @@
           </ul>
         </section>
 
+        <section v-if="card" class="rounded-[18px] border border-white/10 bg-white/5 p-5 light:border-slate-200 light:bg-white">
+          <h2 class="text-base font-bold text-slate-100 light:text-slate-900">{{ t('Payment method') }}</h2>
+          <div class="mt-3 flex flex-col gap-2" role="radiogroup" :aria-label="t('Payment method')">
+            <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/8 bg-white/3 p-3 light:border-slate-200 light:bg-slate-50">
+              <input v-model="paymentMethod" type="radio" value="MEMBER_CARD" class="size-4 accent-violet-600" :disabled="!cardCanPay">
+              <span class="min-w-0 flex-1">
+                <span class="block text-[13px] font-semibold text-slate-100 light:text-slate-900">{{ t('Member card') }}</span>
+                <span class="text-xs text-white/45 light:text-slate-500">{{ t('Balance {amount}', { amount: formatMoney(card.balance, card.currency) }) }}</span>
+              </span>
+            </label>
+            <p v-if="card.status === 'SUSPENDED'" class="text-xs text-amber-400 light:text-amber-700">{{ t('This card is suspended, so it can\'t pay for courses right now.') }}</p>
+            <p v-else-if="total > card.balance" class="text-xs text-amber-400 light:text-amber-700">{{ t('Your balance doesn\'t cover this order.') }}</p>
+            <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/8 bg-white/3 p-3 light:border-slate-200 light:bg-slate-50">
+              <input v-model="paymentMethod" type="radio" value="ONLINE" class="size-4 accent-violet-600">
+              <span class="text-[13px] font-semibold text-slate-100 light:text-slate-900">{{ t('Pay online') }}</span>
+            </label>
+          </div>
+        </section>
+
         <section class="rounded-[18px] border border-white/10 bg-white/5 p-5 light:border-slate-200 light:bg-white">
           <h2 class="text-base font-bold text-slate-100 light:text-slate-900">{{ t('Coupon') }}</h2>
           <form v-if="!preview" class="mt-3 flex gap-2" @submit.prevent="applyCoupon">
@@ -79,7 +98,7 @@
         <button
           type="button"
           class="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-violet-500/40 bg-linear-to-br from-violet-600 to-indigo-600 px-5 py-2.5 text-[13px] font-semibold text-white hover:from-violet-500 hover:to-indigo-500 disabled:cursor-wait disabled:opacity-60"
-          :disabled="paying"
+          :disabled="paying || (paymentMethod === 'MEMBER_CARD' && !cardCanPay)"
           @click="pay"
         >
           <Loader2 v-if="paying" :size="16" class="animate-spin" />
@@ -94,8 +113,9 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Loader2, Lock } from 'lucide-vue-next'
-import type { CartCouponPreview, Course } from '~/types'
+import type { CartCouponPreview, Course, MemberCard, PaymentMethod } from '~/types'
 import { formatMoney, useCart } from '~/composables/useCart'
+import { useMemberCard } from '~/composables/useMemberCard'
 import { useOrders } from '~/composables/useOrders'
 import { useAppToast } from '~/composables/useAppToast'
 import { getErrorMessage } from '~/utils/apiError'
@@ -108,6 +128,7 @@ const router = useRouter()
 const toast = useAppToast()
 const { cart, refresh, previewCoupon, checkout } = useCart()
 const { checkoutCourse, previewCourseCoupon } = useOrders()
+const { fetchMine } = useMemberCard()
 
 // Buy now passes one course; without it, this page checks out the whole cart
 const courseSlug = computed(() => typeof route.query.course === 'string' ? route.query.course : '')
@@ -120,6 +141,8 @@ const preview = ref<Pick<CartCouponPreview, 'code' | 'courseTitle' | 'couponDisc
 const applying = ref(false)
 const couponError = ref('')
 const paying = ref(false)
+const card = ref<MemberCard | null>(null)
+const paymentMethod = ref<PaymentMethod>('ONLINE')
 
 const items = computed(() => course.value
   ? [{ courseId: course.value.id, title: course.value.title, instructor: course.value.instructor, price: course.value.price }]
@@ -127,6 +150,12 @@ const items = computed(() => course.value
 const currency = computed(() => cart.value?.currency)
 const subtotal = computed(() => course.value ? course.value.price : cart.value?.total ?? 0)
 const total = computed(() => preview.value?.total ?? subtotal.value)
+const cardCanPay = computed(() => card.value?.status === 'ACTIVE' && total.value <= card.value.balance)
+
+// A coupon can make the card usable, and removing one can put the total out of reach
+watch(cardCanPay, (usable) => {
+  paymentMethod.value = usable ? 'MEMBER_CARD' : 'ONLINE'
+})
 
 async function fetchPreview(couponCode: string) {
   if (!course.value) return await previewCoupon(couponCode)
@@ -162,8 +191,8 @@ async function pay() {
   paying.value = true
   try {
     const result = course.value
-      ? await checkoutCourse(course.value.slug, preview.value?.code)
-      : await checkout(preview.value?.code)
+      ? await checkoutCourse(course.value.slug, preview.value?.code, paymentMethod.value)
+      : await checkout(preview.value?.code, paymentMethod.value)
     if (result.checkoutUrl) {
       await navigateTo(result.checkoutUrl, { external: true })
       return
@@ -182,6 +211,8 @@ async function pay() {
 onMounted(async () => {
   try {
     const current = await refresh()
+    // The card is optional, so a failure here only hides that choice
+    card.value = (await fetchMine().catch(() => null))?.card ?? null
     if (courseSlug.value) {
       course.value = await $fetch<Course>(`/api/courses/${encodeURIComponent(courseSlug.value)}`)
     } else if (!current.items.length) {

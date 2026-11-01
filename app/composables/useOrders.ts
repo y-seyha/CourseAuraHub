@@ -1,4 +1,4 @@
-import type { AdminOrderPage, CouponPreview, Order } from '~/types'
+import type { AdminOrderPage, CouponPreview, Order, PaymentMethod } from '~/types'
 
 /** Learner checkout and order history, plus the admin order list. */
 export function useOrders() {
@@ -15,8 +15,8 @@ export function useOrders() {
   }
 
   // Buys one course on its own, leaving anything else in the cart alone
-  async function checkoutCourse(courseSlug: string, couponCode?: string) {
-    return await $fetch<Order>('/api/me/orders', { method: 'POST', body: { courseSlug, couponCode } })
+  async function checkoutCourse(courseSlug: string, couponCode?: string, paymentMethod?: PaymentMethod) {
+    return await $fetch<Order>('/api/me/orders', { method: 'POST', body: { courseSlug, couponCode, paymentMethod } })
   }
 
   async function previewCourseCoupon(courseSlug: string, code: string) {
