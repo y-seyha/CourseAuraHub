@@ -591,3 +591,71 @@ export interface EnrollmentCreate {
   amount: number
   enrolledAt?: string
 }
+
+export type PaymentMethod = 'ONLINE' | 'MEMBER_CARD'
+export type MemberCardApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type MemberCardStatus = 'ACTIVE' | 'SUSPENDED'
+export type MemberCardTransactionType = 'TOP_UP' | 'DEDUCTION' | 'PURCHASE' | 'REFUND'
+
+export interface MemberCardApplicationForm {
+  fullName: string
+  phone: string
+  dateOfBirth: string
+  address: string
+}
+
+export interface MemberCardApplication extends MemberCardApplicationForm {
+  id: number
+  studentId: number
+  studentEmail: string
+  status: MemberCardApplicationStatus
+  reviewNote: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
+export interface MemberCard {
+  id: number
+  studentId: number
+  studentEmail: string
+  cardNumber: string
+  holderName: string
+  balance: number
+  currency: string
+  status: MemberCardStatus
+  createdAt: string
+}
+
+export interface MemberCardOverview {
+  card: MemberCard | null
+  application: MemberCardApplication | null
+}
+
+export interface MemberCardTransaction {
+  id: number
+  type: MemberCardTransactionType
+  amount: number
+  balanceAfter: number
+  reference: string | null
+  note: string | null
+  createdAt: string
+}
+
+export interface MemberCardAdjustment {
+  type: 'TOP_UP' | 'DEDUCTION'
+  amount: number
+  note: string
+  idempotencyKey: string
+}
+
+interface PageOf<T> {
+  items: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+export type MemberCardPage = PageOf<MemberCard>
+export type MemberCardApplicationPage = PageOf<MemberCardApplication>
+export type MemberCardTransactionPage = PageOf<MemberCardTransaction>
