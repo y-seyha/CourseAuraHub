@@ -195,14 +195,14 @@ const tabs = [
   { value: 'cards', label: 'Cards' }
 ]
 const statusOptions = [
+  { value: '', label: 'All Statuses' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-  { value: '', label: 'All Statuses' }
+  { value: 'REJECTED', label: 'Rejected' }
 ]
 
 const tab = ref('applications')
-const statusFilter = ref('PENDING')
+const statusFilter = ref('')
 const applicationPage = ref(0)
 const cardPage = ref(0)
 const searchInput = ref('')

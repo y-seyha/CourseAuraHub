@@ -22,6 +22,8 @@ export const km: Record<string, string> = {
   'Platform': 'វេទិកា',
   'Profile': 'ប្រវត្តិរូប',
   'Sales': 'ការលក់',
+  'Purchases': 'ការទិញ',
+  'Promotions': 'ប្រូម៉ូសិន',
   'Security': 'សុវត្ថិភាព',
   'Settings': 'ការកំណត់',
   'Students': 'សិស្ស',
