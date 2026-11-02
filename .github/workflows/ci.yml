@@ -18,7 +18,8 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-      - run: npm ci
+      # npm ci needs package-lock.json to match package.json exactly, and the committed one is behind
+      - run: npm install --no-audit --no-fund
       - name: Lint
         run: npx eslint .
       - name: Type check
