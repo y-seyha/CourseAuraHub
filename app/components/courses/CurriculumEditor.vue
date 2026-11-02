@@ -60,6 +60,7 @@
             <button type="button" :class="iconButtonClass" :aria-label="`Move ${lesson.title} up`" :disabled="busy || lessonIndex === 0" @click="moveLesson(section, lessonIndex, -1)"><ArrowUp :size="13" /></button>
             <button type="button" :class="iconButtonClass" :aria-label="`Move ${lesson.title} down`" :disabled="busy || lessonIndex === section.lessons.length - 1" @click="moveLesson(section, lessonIndex, 1)"><ArrowDown :size="13" /></button>
             <button v-if="lesson.type === 'quiz'" type="button" :class="iconButtonClass" :aria-label="`Edit questions for ${lesson.title}`" title="Quiz questions" @click="quizLesson = lesson"><ListChecks :size="13" /></button>
+            <button v-else type="button" :class="iconButtonClass" :aria-label="`Assignment for ${lesson.title}`" title="Assignment" @click="assignmentLesson = lesson"><ClipboardCheck :size="13" /></button>
             <button type="button" :class="iconButtonClass" :aria-label="`Edit ${lesson.title}`" @click="openLessonModal(section, lesson)"><Pencil :size="13" /></button>
             <button type="button" :class="dangerButtonClass" :aria-label="`Delete ${lesson.title}`" @click="pendingDelete = { kind: 'lesson', id: lesson.id, name: lesson.title }"><Trash2 :size="13" /></button>
           </li>
@@ -90,6 +91,7 @@
     <p v-else class="text-[13px] text-white/45 light:text-slate-500">Unable to load the curriculum.</p>
 
     <QuizEditorModal :is-open="Boolean(quizLesson)" :lesson="quizLesson" @close="quizLesson = null" />
+    <AssignmentEditorModal :lesson="assignmentLesson" @close="assignmentLesson = null" />
 
     <LessonFormModal
       :is-open="lessonModal.open"
@@ -115,9 +117,10 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowDown, ArrowUp, Check, FileText, HelpCircle, ListChecks, Pencil, PlayCircle, Plus, Trash2, X } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, Check, ClipboardCheck, FileText, HelpCircle, ListChecks, Pencil, PlayCircle, Plus, Trash2, X } from 'lucide-vue-next'
 import type { CourseSection, Curriculum, Lesson, LessonFormData, LessonType } from '~/types'
 import LessonFormModal from '~/components/courses/LessonFormModal.vue'
+import AssignmentEditorModal from '~/components/courses/AssignmentEditorModal.vue'
 import QuizEditorModal from '~/components/courses/QuizEditorModal.vue'
 import ConfirmDeleteModal from '~/components/shared/ConfirmDeleteModal.vue'
 import { formatDuration, useCurriculum } from '~/composables/useCurriculum'
@@ -130,6 +133,7 @@ const props = defineProps<{ slug: string }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const quizLesson = ref<Lesson | null>(null)
+const assignmentLesson = ref<Lesson | null>(null)
 
 const api = useCurriculum()
 const toast = useAppToast()

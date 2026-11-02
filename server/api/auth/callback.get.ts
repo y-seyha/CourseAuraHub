@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       for (const cookie of setCookieHeaders) {
         // Parse and set each cookie
         const [cookieString] = cookie.split(';')
-        const [name, ...rest] = cookieString.split('=')
+        const [name, ...rest] = (cookieString ?? '').split('=')
         const value = rest.join('=')
         if (name && value) {
           // Set cookie with proper options
@@ -29,10 +29,10 @@ export default defineEventHandler(async (event) => {
           if (cookie.includes('Secure')) options.secure = true
           if (cookie.includes('SameSite')) {
             const sameSiteMatch = cookie.match(/SameSite=([^;]+)/i)
-            if (sameSiteMatch) options.sameSite = sameSiteMatch[1].toLowerCase()
+            if (sameSiteMatch?.[1]) options.sameSite = sameSiteMatch[1].toLowerCase()
           }
           const maxAgeMatch = cookie.match(/Max-Age=(\d+)/i)
-          if (maxAgeMatch) options.maxAge = parseInt(maxAgeMatch[1], 10)
+          if (maxAgeMatch?.[1]) options.maxAge = parseInt(maxAgeMatch[1], 10)
           setCookie(event, name.trim(), value.trim(), options)
         }
       }

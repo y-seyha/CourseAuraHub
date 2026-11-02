@@ -60,6 +60,9 @@
       </div>
     </template>
 
+    <MemberCardTopUps v-else-if="tab === 'top-ups'" @changed="refreshCards()" />
+    <MemberCardReport v-else-if="tab === 'report'" />
+
     <!-- Cards -->
     <template v-else>
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -101,7 +104,7 @@
       </div>
     </template>
 
-    <div v-if="pageCount > 1" class="flex items-center justify-end gap-3 text-xs text-white/50 light:text-slate-500">
+    <div v-if="pageCount > 1 && (tab === 'applications' || tab === 'cards')" class="flex items-center justify-end gap-3 text-xs text-white/50 light:text-slate-500">
       <button type="button" class="cursor-pointer font-semibold disabled:cursor-not-allowed disabled:opacity-40" :disabled="page === 0" @click="page -= 1">Previous</button>
       <span>Page {{ page + 1 }} of {{ pageCount }}</span>
       <button type="button" class="cursor-pointer font-semibold disabled:cursor-not-allowed disabled:opacity-40" :disabled="page + 1 >= pageCount" @click="page += 1">Next</button>
@@ -170,6 +173,8 @@ import type { MemberCard, MemberCardApplication, Student } from '~/types'
 import AppDropdown from '~/components/shared/AppDropdown.vue'
 import ConfirmDeleteModal from '~/components/shared/ConfirmDeleteModal.vue'
 import MemberCardManageModal from '~/components/membercard/MemberCardManageModal.vue'
+import MemberCardReport from '~/components/membercard/MemberCardReport.vue'
+import MemberCardTopUps from '~/components/membercard/MemberCardTopUps.vue'
 import { formatMoney } from '~/composables/useCart'
 import { useAppToast } from '~/composables/useAppToast'
 import { useMemberCard } from '~/composables/useMemberCard'
@@ -192,7 +197,9 @@ const messageClass = 'rounded-[18px] border border-white/10 bg-white/5 px-5 py-1
 
 const tabs = [
   { value: 'applications', label: 'Applications' },
-  { value: 'cards', label: 'Cards' }
+  { value: 'cards', label: 'Cards' },
+  { value: 'top-ups', label: 'Top-Ups' },
+  { value: 'report', label: 'Report' }
 ]
 const statusOptions = [
   { value: '', label: 'All Statuses' },

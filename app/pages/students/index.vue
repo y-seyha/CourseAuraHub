@@ -82,7 +82,7 @@ const isRefreshing = ref(false)
 const selectedStudentId = ref<number | null>(null)
 const { data, pending, refresh } = await useAsyncData<Student[]>(
   'students-list',
-  () => $fetch(`/api/students?_t=${Date.now()}`),
+  () => $fetch<Student[]>('/api/students', { query: { _t: Date.now() } }),
   { server: false }
 )
 

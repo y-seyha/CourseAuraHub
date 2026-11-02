@@ -45,7 +45,7 @@
 
             <!-- Row: Instructor, Level, Status -->
             <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-              <div class="flex min-w-0 flex-col gap-1.5">
+              <div v-if="!instructorMode" class="flex min-w-0 flex-col gap-1.5">
                 <label class="text-[11px] font-semibold tracking-wider text-white/60 uppercase light:text-slate-600">Instructor Name</label>
                 <input
                   v-model="form.instructor"
@@ -60,7 +60,7 @@
                 <AppDropdown id="course-level" v-model="form.level" :options="levelOptions" />
               </div>
 
-              <div class="flex min-w-0 flex-col gap-1.5">
+              <div v-if="!instructorMode" class="flex min-w-0 flex-col gap-1.5">
                 <label class="text-[11px] font-semibold tracking-wider text-white/60 uppercase light:text-slate-600" for="course-status">Publishing Status</label>
                 <AppDropdown id="course-status" v-model="form.status" :options="statusOptions" />
               </div>
@@ -194,16 +194,9 @@ import { BookPlus, FileEdit, X, Loader2 } from 'lucide-vue-next'
 import { useModalA11y } from '~/composables/useModalA11y'
 import AppDropdown from '~/components/shared/AppDropdown.vue'
 import FileUploadButton from '~/components/shared/FileUploadButton.vue'
+import { useInstructor } from '~/composables/useInstructor'
 import type { Course, CourseFormData } from '~/types'
 
-const categoryOptions = [
-  { value: 'Web Development', label: 'Web Development' },
-  { value: 'Programming', label: 'Programming' },
-  { value: 'Design', label: 'Design' },
-  { value: 'Backend', label: 'Backend' },
-  { value: 'DevOps', label: 'DevOps' },
-  { value: 'Mobile', label: 'Mobile' }
-]
 const levelOptions = [
   { value: 'Beginner', label: 'Beginner' },
   { value: 'Intermediate', label: 'Intermediate' },
@@ -212,6 +205,7 @@ const levelOptions = [
 const statusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
+  { value: 'pending_review', label: 'In Review' },
   { value: 'archived', label: 'Archived' }
 ]
 
@@ -219,6 +213,8 @@ const props = defineProps<{
   isOpen: boolean
   course?: Course | null
   loading?: boolean
+  // Instructors teach under their own name, and only a review can publish
+  instructorMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -236,6 +232,15 @@ useModalA11y({
 })
 
 const isEdit = computed(() => !!props.course)
+
+const { fetchCategories } = useInstructor()
+const categories = ref<string[]>([])
+// The saved value stays selectable even if its category was since removed
+const categoryOptions = computed(() => [...new Set([...categories.value, form.category])].map(name => ({ value: name, label: name })))
+
+onMounted(async () => {
+  categories.value = (await fetchCategories().catch(() => [])).map(category => category.name)
+})
 
 const modalFade = {
   enterActiveClass: 'transition-opacity duration-250 ease-out',

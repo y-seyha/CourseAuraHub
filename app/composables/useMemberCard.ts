@@ -7,7 +7,11 @@ import type {
   MemberCardCreate,
   MemberCardOverview,
   MemberCardPage,
+  MemberCardReport,
   MemberCardStatus,
+  MemberCardTopUp,
+  MemberCardTopUpForm,
+  MemberCardTopUpPage,
   MemberCardTransaction,
   MemberCardTransactionPage,
   MemberCardTransactionType
@@ -27,6 +31,32 @@ export function useMemberCard() {
     return await $fetch<MemberCardTransactionPage>('/api/me/member-card/transactions', {
       query: { page: String(page), size: String(size) }
     })
+  }
+
+  async function fetchMyTopUps() {
+    return await $fetch<MemberCardTopUp[]>('/api/me/member-card/top-ups')
+  }
+
+  async function requestTopUp(form: MemberCardTopUpForm) {
+    return await $fetch<MemberCardTopUp>('/api/me/member-card/top-ups', { method: 'POST', body: form })
+  }
+
+  async function fetchTopUps(status: string, page = 0, size = 20) {
+    return await $fetch<MemberCardTopUpPage>('/api/admin/member-cards/top-ups', {
+      query: { status, page: String(page), size: String(size) }
+    })
+  }
+
+  async function approveTopUp(id: number) {
+    return await $fetch<MemberCardTopUp>(`/api/admin/member-cards/top-ups/${id}/approve`, { method: 'POST' })
+  }
+
+  async function rejectTopUp(id: number, note: string) {
+    return await $fetch<MemberCardTopUp>(`/api/admin/member-cards/top-ups/${id}/reject`, { method: 'POST', body: { note } })
+  }
+
+  async function fetchReport(days: number) {
+    return await $fetch<MemberCardReport>('/api/admin/member-cards/report', { query: { days: String(days) } })
   }
 
   async function fetchApplications(status: string, page = 0, size = 20) {
@@ -85,6 +115,12 @@ export function useMemberCard() {
     fetchMine,
     apply,
     fetchMyTransactions,
+    fetchMyTopUps,
+    requestTopUp,
+    fetchTopUps,
+    approveTopUp,
+    rejectTopUp,
+    fetchReport,
     fetchApplications,
     approveApplication,
     rejectApplication,

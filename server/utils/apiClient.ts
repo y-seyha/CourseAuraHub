@@ -480,7 +480,7 @@ async function executeBackendRequest<T>(
 
   return await $fetch<BackendApiResponse<T>>(`${getApiBase()}${path}`, {
     method: options.method || 'GET',
-    body: options.body,
+    body: options.body as Record<string, unknown> | undefined,
     query: options.query,
     headers,
   })

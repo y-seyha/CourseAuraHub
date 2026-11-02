@@ -5,7 +5,7 @@ export function useDashboardStats() {
 
   const { data, pending, refresh: baseRefresh, error } = useAsyncData<DashboardStats>(
     'dashboard-stats',
-    () => $fetch(`/api/stats?_t=${Date.now()}`),
+    () => $fetch<DashboardStats>('/api/stats', { query: { _t: Date.now() } }),
     { server: false }
   )
 
