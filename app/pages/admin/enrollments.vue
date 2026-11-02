@@ -94,8 +94,8 @@ const { fetchEnrollments, createEnrollment, deleteEnrollment } = useStudentAdmin
 const labelClass = 'text-[11px] font-semibold tracking-wider text-white/60 uppercase light:text-slate-600'
 
 const { data, pending, error, refresh } = await useAsyncData<Enrollment[]>('admin-enrollments', () => fetchEnrollments(), { server: false })
-const { data: students } = await useAsyncData<Student[]>('enrollment-students', () => $fetch('/api/students'), { server: false })
-const { data: courses } = await useAsyncData<Course[]>('enrollment-courses', () => $fetch('/api/courses'), { server: false })
+const { data: students } = await useAsyncData<Student[]>('enrollment-students', () => $fetch<Student[]>('/api/students'), { server: false })
+const { data: courses } = await useAsyncData<Course[]>('enrollment-courses', () => $fetch<Course[]>('/api/courses'), { server: false })
 
 const enrollments = computed(() => data.value ?? [])
 const studentOptions = computed(() => (students.value ?? []).map(s => ({ value: s.id, label: `${s.name} (${s.email})` })))

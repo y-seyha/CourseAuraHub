@@ -25,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ChartOptions } from 'chart.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -78,7 +79,7 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = computed(() => {
+const chartOptions = computed<ChartOptions<'line'>>(() => {
   const gridColor = isDark.value ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.06)'
   const tickColor = isDark.value ? 'rgba(255,255,255,0.35)' : 'rgba(71,85,105,0.85)'
   const borderColor = isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.08)'
@@ -97,8 +98,8 @@ const chartOptions = computed(() => {
         padding: 12,
         cornerRadius: 10,
         callbacks: {
-          label: (ctx: { parsed: { y: number } }) => {
-            const v = ctx.parsed.y
+          label: (ctx) => {
+            const v = ctx.parsed.y ?? 0
             return activeTab.value === 'Revenue' ? `  $${v.toLocaleString()}` : `  ${v.toLocaleString()} students`
           },
         },
@@ -115,7 +116,7 @@ const chartOptions = computed(() => {
         ticks: {
           color: tickColor,
           font: { size: 11 },
-          callback: (v: number) => activeTab.value === 'Revenue' ? `$${(v / 1000).toFixed(0)}K` : v,
+          callback: (value) => { const v = Number(value); return activeTab.value === 'Revenue' ? `$${(v / 1000).toFixed(0)}K` : v },
         },
         border: { color: borderColor },
       },
