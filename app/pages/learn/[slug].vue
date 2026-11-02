@@ -61,6 +61,7 @@
             />
             <video
               v-else-if="isPlayableVideo && !mediaFailed"
+              ref="videoRef"
               :key="`video-${activeLesson.id}`"
               :src="activeLesson.contentUrl || undefined"
               class="aspect-video w-full bg-black"
@@ -138,6 +139,15 @@
             </div>
           </div>
 
+          <LessonWorkspace
+            v-if="curriculum.enrolled || auth.isStaff"
+            :key="`workspace-${activeLesson.id}`"
+            :lesson-id="activeLesson.id"
+            :enrolled="curriculum.enrolled"
+            :position-seconds="isPlayableVideo && !mediaFailed ? videoSeconds : null"
+            @seek="seekTo"
+          />
+
           <div
             v-if="curriculum.progress?.completed"
             class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-200 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
@@ -188,6 +198,7 @@ import {
 import type { Certificate, Course, Curriculum, Lesson, LessonProgressResult } from '~/types'
 import ProgressBar from '~/components/learning/ProgressBar.vue'
 import CurriculumOutline from '~/components/learning/CurriculumOutline.vue'
+import LessonWorkspace from '~/components/learning/LessonWorkspace.vue'
 import QuizPlayer from '~/components/learning/QuizPlayer.vue'
 import { flattenLessons, formatDuration, useCurriculum } from '~/composables/useCurriculum'
 import { useLearning } from '~/composables/useLearning'
@@ -222,8 +233,11 @@ const curriculum = computed<Curriculum | null>(() => data.value?.curriculum ?? n
 const POSITION_SAVE_INTERVAL_SECONDS = 10
 const RESUME_END_MARGIN_SECONDS = 5
 
+const auth = useAuth()
 const saving = ref(false)
 const mediaFailed = ref(false)
+const videoRef = ref<HTMLVideoElement | null>(null)
+const videoSeconds = ref(0)
 let lastSavedPosition = 0
 const certificate = ref<Certificate | null>(null)
 // Badges earned so far, so a completion can announce only the new ones
@@ -316,9 +330,16 @@ function onVideoProgress(event: Event) {
   const video = event.target as HTMLVideoElement
   const lesson = activeLesson.value
   const seconds = Math.floor(video.currentTime)
+  videoSeconds.value = seconds
   if (lesson && video.isConnected && Math.abs(seconds - lastSavedPosition) >= POSITION_SAVE_INTERVAL_SECONDS) {
     savePosition(lesson, seconds)
   }
+}
+
+function seekTo(seconds: number) {
+  if (!videoRef.value) return
+  videoRef.value.currentTime = seconds
+  videoRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 function onVideoPause(event: Event) {
@@ -331,6 +352,7 @@ function onVideoPause(event: Event) {
 watch(() => activeLesson.value?.id, (lessonId) => {
   mediaFailed.value = false
   lastSavedPosition = 0
+  videoSeconds.value = 0
   // Pin the resolved lesson in the URL so completing it doesn't move the fallback selection
   if (lessonId && route.query.lesson !== String(lessonId)) {
     router.replace({ query: { ...route.query, lesson: String(lessonId) } })

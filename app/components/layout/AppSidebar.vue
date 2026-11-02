@@ -115,6 +115,10 @@ import {
   Settings,
   BarChart3,
   Bell,
+  ClipboardCheck,
+  FolderTree,
+  HelpCircle,
+  Presentation,
   GraduationCap,
   UserPlus,
   Heart,
@@ -128,6 +132,8 @@ import {
   Trophy,
   UserCog
 } from 'lucide-vue-next'
+
+import type { Component } from 'vue'
 
 const { t } = useT()
 
@@ -147,7 +153,14 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuth()
 
-const navSections = computed(() => {
+interface NavItem {
+  to: string
+  label: string
+  icon: Component
+  badge?: string
+}
+
+const navSections = computed<{ label: string, items: NavItem[] }[]>(() => {
   if (!auth.isAuthenticated) {
     return [
       {
@@ -161,6 +174,16 @@ const navSections = computed(() => {
 
   if (!auth.isAdmin) {
     return [
+      ...(auth.isInstructor
+        ? [{
+            label: 'Teaching',
+            items: [
+              { to: '/instructor', label: 'My Courses', icon: Presentation },
+              { to: '/instructor/submissions', label: 'Submissions', icon: ClipboardCheck },
+              { to: '/questions', label: 'Questions', icon: HelpCircle },
+            ],
+          }]
+        : []),
       {
         label: 'Learning',
         items: [
@@ -203,6 +226,15 @@ const navSections = computed(() => {
         { to: '/courses', label: 'Courses', icon: BookOpen },
         { to: '/students', label: 'Students', icon: GraduationCap },
         { to: '/admin/enrollments', label: 'Enrollments', icon: UserPlus },
+        { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+      ],
+    },
+    {
+      label: 'Teaching',
+      items: [
+        { to: '/admin/course-reviews', label: 'Course Reviews', icon: ShieldCheck },
+        { to: '/instructor/submissions', label: 'Submissions', icon: ClipboardCheck },
+        { to: '/questions', label: 'Questions', icon: HelpCircle },
       ],
     },
     {
@@ -253,6 +285,8 @@ const fadeBackdrop = {
 function isActive(to: string) {
   if (to === '/') return route.path === '/'
   if (to === '/admin') return route.path === '/admin'
+  // Its sibling pages have their own links; a course page belongs to My Courses
+  if (to === '/instructor') return route.path === to || route.path.startsWith('/instructor/courses')
   // The lesson player belongs to My Learning
   if (to === '/my-learning' && route.path.startsWith('/learn/')) return true
   // Profile shares its prefix with the other account pages

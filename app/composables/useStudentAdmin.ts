@@ -18,6 +18,10 @@ export function useStudentAdmin() {
     return await $fetch<AccountSecurity>(`/api/admin/users/${userId}/unlock`, { method: 'POST' })
   }
 
+  async function setAccountRole(userId: string, role: 'USER' | 'INSTRUCTOR') {
+    return await $fetch<AccountSecurity>(`/api/admin/users/${userId}/role`, { method: 'PATCH', body: { role } })
+  }
+
   async function revokeSessions(userId: string) {
     return await $fetch(`/api/admin/users/${userId}/sessions`, { method: 'DELETE' })
   }
@@ -39,6 +43,7 @@ export function useStudentAdmin() {
     fetchAccount,
     setAccountEnabled,
     unlockAccount,
+    setAccountRole,
     revokeSessions,
     fetchEnrollments,
     createEnrollment,

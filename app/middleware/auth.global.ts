@@ -83,4 +83,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (to.meta.requiresAdmin === true && !auth.isAdmin) {
     return navigateTo(auth.homeRoute)
   }
+
+  if (to.meta.requiresStaff === true && !auth.isStaff) {
+    return navigateTo(auth.homeRoute)
+  }
 })

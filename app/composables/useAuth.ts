@@ -70,6 +70,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => Boolean(user.value))
   const isAdmin = computed(() => user.value?.role === ADMIN_ROLE)
+  const isInstructor = computed(() => user.value?.role === 'ROLE_INSTRUCTOR')
+  const isStaff = computed(() => isAdmin.value || isInstructor.value)
 
   const userName = computed(() => {
     if (!user.value) return ''
@@ -109,7 +111,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
-  const homeRoute = computed(() => isAdmin.value ? '/' : '/my-learning')
+  const homeRoute = computed(() => {
+    if (isAdmin.value) return '/'
+    return isInstructor.value ? '/instructor' : '/my-learning'
+  })
 
   function currentRedirect() {
     return getSafeRedirect(router.currentRoute.value.query.redirect)
@@ -452,6 +457,8 @@ export const useAuthStore = defineStore('auth', () => {
     lastError,
     isAuthenticated,
     isAdmin,
+    isInstructor,
+    isStaff,
     userName,
     userEmail,
     userInitials,

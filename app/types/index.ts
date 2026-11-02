@@ -12,7 +12,7 @@ export interface Course {
   instructor: string
   price: number
   originalPrice: number
-  status: 'published' | 'draft' | 'archived'
+  status: 'published' | 'draft' | 'archived' | 'pending_review'
   category: string
   level: 'Beginner' | 'Intermediate' | 'Advanced'
   thumbnail: string
@@ -75,7 +75,7 @@ export type CourseFormData = Omit<
 
 export interface AppNotification {
   id: number
-  type: 'enrolled' | 'payment_failed' | 'order_refunded' | 'certificate_issued' | 'new_lesson' | 'new_enrollment' | 'course_completed' | 'weekly_report'
+  type: 'enrolled' | 'payment_failed' | 'order_refunded' | 'certificate_issued' | 'new_lesson' | 'new_enrollment' | 'course_completed' | 'member_card' | 'lesson_question' | 'assignment' | 'course_review' | 'course_reminder' | 'weekly_report'
   title: string
   message: string
   // Frontend path to open, such as a course page
@@ -544,7 +544,7 @@ export interface ReviewPage {
   averageRating: number | null
 }
 
-export type FilePurpose = 'AVATAR' | 'COURSE_THUMBNAIL' | 'LESSON_CONTENT'
+export type FilePurpose = 'AVATAR' | 'COURSE_THUMBNAIL' | 'LESSON_CONTENT' | 'ASSIGNMENT_SUBMISSION' | 'TOP_UP_RECEIPT'
 
 export interface FileUploadRequest {
   purpose: FilePurpose
@@ -583,6 +583,7 @@ export interface AccountSecurity {
   mfaEnabled: boolean
   lockedUntil: string | null
   failedLoginAttempts: number
+  role: string
 }
 
 export interface EnrollmentCreate {
@@ -641,6 +642,150 @@ export interface MemberCardTransaction {
   createdAt: string
 }
 
+export interface MemberCardTopUp {
+  id: number
+  cardId: number
+  cardNumber: string
+  holderName: string
+  studentEmail: string
+  amount: number
+  currency: string
+  note: string | null
+  receiptUrl: string | null
+  receiptName: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  reviewNote: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
+export interface MemberCardTopUpForm {
+  amount: number
+  note?: string
+  receiptUrl?: string
+  receiptName?: string
+}
+
+export interface MemberCardReport {
+  days: number
+  currency: string
+  totalCards: number
+  activeCards: number
+  outstandingBalance: number
+  pendingApplications: number
+  pendingTopUps: number
+  topUps: number
+  deductions: number
+  purchases: number
+  refunds: number
+}
+
+export interface LessonAnswer {
+  id: number
+  authorName: string
+  fromStaff: boolean
+  body: string
+  createdAt: string
+  canDelete: boolean
+}
+
+export interface LessonQuestion {
+  id: number
+  lessonId: number
+  authorName: string
+  body: string
+  resolved: boolean
+  createdAt: string
+  canManage: boolean
+  answers: LessonAnswer[]
+}
+
+export interface OpenQuestion {
+  id: number
+  lessonId: number
+  lessonTitle: string
+  courseSlug: string
+  courseTitle: string
+  authorName: string
+  body: string
+  answerCount: number
+  createdAt: string
+}
+
+export interface LessonNote {
+  id: number
+  lessonId: number
+  body: string | null
+  positionSeconds: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Category {
+  id: number
+  name: string
+  courseCount: number
+}
+
+export interface AssignmentSubmission {
+  id: number
+  fileUrl: string | null
+  fileName: string | null
+  comment: string | null
+  status: 'SUBMITTED' | 'GRADED'
+  score: number | null
+  passed: boolean
+  feedback: string | null
+  submittedAt: string
+  gradedAt: string | null
+}
+
+export interface Assignment {
+  id: number
+  lessonId: number
+  instructions: string
+  passScore: number
+  required: boolean
+  submission: AssignmentSubmission | null
+}
+
+export interface AssignmentForm {
+  instructions: string
+  passScore: number
+  required: boolean
+}
+
+export interface SubmissionReview {
+  studentName: string
+  lessonId: number
+  lessonTitle: string
+  courseSlug: string
+  courseTitle: string
+  passScore: number
+  submission: AssignmentSubmission
+}
+
+export interface InstructorCourse {
+  course: Course
+  reviewNote: string | null
+}
+
+export interface InstructorSummary {
+  courses: number
+  publishedCourses: number
+  awaitingReview: number
+  students: number
+  revenue: number
+  averageRating: number
+}
+
+export interface InstructorStudent {
+  id: number
+  name: string
+  avatar: string
+  completed: boolean
+}
+
 export interface MemberCardCreate {
   studentId: number
   holderName: string
@@ -663,5 +808,8 @@ interface PageOf<T> {
 }
 
 export type MemberCardPage = PageOf<MemberCard>
+export type MemberCardTopUpPage = PageOf<MemberCardTopUp>
+export type OpenQuestionPage = PageOf<OpenQuestion>
+export type SubmissionPage = PageOf<SubmissionReview>
 export type MemberCardApplicationPage = PageOf<MemberCardApplication>
 export type MemberCardTransactionPage = PageOf<MemberCardTransaction>

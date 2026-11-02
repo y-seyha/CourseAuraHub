@@ -22,6 +22,7 @@
           <template #separator>
             <ChevronRight :size="13" class="shrink-0 text-white/35 light:text-slate-400" />
           </template>
+          <!-- @vue-expect-error Nuxt UI's types don't declare this slot -->
           <template #default="{ item, index }">
             <NuxtLink
               v-if="item.to && index < breadcrumbItems.length - 1"
@@ -432,32 +433,35 @@
 
 <script setup lang="ts">
 import {
-  Menu,
-  Search,
-  ShoppingCart,
   AlertTriangle,
   Award,
+  BarChart3,
   Bell,
+  BellRing,
+  BookOpen,
+  ChevronRight,
+  ClipboardCheck,
+  Compass,
+  CreditCard,
+  GraduationCap,
+  Heart,
   HelpCircle,
+  LogOut,
+  Menu,
+  PlayCircle,
+  Receipt,
+  Search,
+  SearchX,
+  Settings,
   ShieldAlert,
   ShieldCheck,
-  Receipt,
+  ShoppingCart,
   Tag,
   TicketPercent,
-  ChevronRight,
-  LogOut,
-  Settings,
-  BookOpen,
-  Users,
-  BarChart3,
   TrendingUp,
-  Compass,
-  SearchX,
-  GraduationCap,
-  PlayCircle,
-  Heart,
   Trophy,
   UserCog,
+  Users,
   X
 } from 'lucide-vue-next'
 import { useMediaQuery } from '@vueuse/core'
@@ -620,7 +624,7 @@ const breadcrumbItems = computed(() => {
 interface HeaderNotification {
   id: number
   title: string
-  message: string
+  message?: string
   time: string
   icon: Component
   iconClass: string
@@ -636,6 +640,11 @@ const notificationStyles: Record<AppNotification['type'], Pick<HeaderNotificatio
   new_lesson: { icon: PlayCircle, iconClass: 'text-violet-400', bgClass: 'bg-violet-400/15 light:bg-violet-50' },
   new_enrollment: { icon: Users, iconClass: 'text-emerald-400', bgClass: 'bg-emerald-400/15 light:bg-emerald-50' },
   course_completed: { icon: Award, iconClass: 'text-emerald-400', bgClass: 'bg-emerald-400/15 light:bg-emerald-50' },
+  member_card: { icon: CreditCard, iconClass: 'text-violet-400', bgClass: 'bg-violet-400/15 light:bg-violet-50' },
+  lesson_question: { icon: HelpCircle, iconClass: 'text-blue-400', bgClass: 'bg-blue-400/15 light:bg-blue-50' },
+  assignment: { icon: ClipboardCheck, iconClass: 'text-emerald-400', bgClass: 'bg-emerald-400/15 light:bg-emerald-50' },
+  course_review: { icon: ShieldCheck, iconClass: 'text-amber-400', bgClass: 'bg-amber-400/15 light:bg-amber-50' },
+  course_reminder: { icon: BellRing, iconClass: 'text-violet-400', bgClass: 'bg-violet-400/15 light:bg-violet-50' },
   weekly_report: { icon: BarChart3, iconClass: 'text-blue-400', bgClass: 'bg-blue-400/15 light:bg-blue-50' }
 }
 

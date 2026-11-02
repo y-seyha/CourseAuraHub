@@ -59,6 +59,9 @@
                   <button v-else type="button" :class="actionClass" :disabled="working" @click="enable">Enable Account</button>
                   <button v-if="isLocked" type="button" :class="actionClass" :disabled="working" @click="unlock">Unlock</button>
                   <button type="button" :class="actionClass" :disabled="working" @click="confirming = 'sign-out'">Sign Out Everywhere</button>
+                  <button v-if="account.role !== 'ROLE_ADMIN'" type="button" :class="actionClass" :disabled="working" @click="toggleInstructor">
+                    {{ account.role === 'ROLE_INSTRUCTOR' ? 'Remove Instructor Role' : 'Make Instructor' }}
+                  </button>
                 </div>
               </template>
             </section>
@@ -85,7 +88,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { fetchStudent, fetchAccount, setAccountEnabled, unlockAccount, revokeSessions } = useStudentAdmin()
+const { fetchStudent, fetchAccount, setAccountEnabled, setAccountRole, unlockAccount, revokeSessions } = useStudentAdmin()
 const toast = useAppToast()
 
 const dialogRef = ref<HTMLElement | null>(null)
@@ -189,6 +192,11 @@ function enable() {
   return run(userId => setAccountEnabled(userId, true), 'Account Enabled')
 }
 
+function toggleInstructor() {
+  const instructor = account.value?.role === 'ROLE_INSTRUCTOR'
+  return run(userId => setAccountRole(userId, instructor ? 'USER' : 'INSTRUCTOR'), instructor ? 'Instructor Role Removed' : 'Instructor Role Added')
+}
+
 function unlock() {
   return run(unlockAccount, 'Account Unlocked')
 }
@@ -196,6 +204,9 @@ function unlock() {
 function confirmAction() {
   return confirming.value === 'disable'
     ? run(userId => setAccountEnabled(userId, false), 'Account Disabled')
-    : run(async (userId) => { await revokeSessions(userId) }, 'Signed Out Everywhere')
+    : run(async (userId) => {
+      await revokeSessions(userId)
+      return undefined
+    }, 'Signed Out Everywhere')
 }
 </script>

@@ -35,6 +35,35 @@
         <p v-if="card.status === 'SUSPENDED'" class="mt-2 text-xs text-amber-400 light:text-amber-700">{{ t('This card is suspended, so it can\'t pay for courses right now.') }}</p>
         <MemberCardHistory class="mt-1" :transactions="transactions" :currency="card.currency" />
       </section>
+
+      <section class="rounded-[18px] border border-white/10 bg-white/5 p-5 lg:col-span-2 light:border-slate-200 light:bg-white">
+        <h2 class="text-base font-bold text-slate-100 light:text-slate-900">{{ t('Request a top-up') }}</h2>
+        <p class="mt-1 text-xs text-white/45 light:text-slate-500">{{ t('Tell us how much you paid. An admin adds it to your balance after checking.') }}</p>
+
+        <form v-if="card.status === 'ACTIVE' && !hasPendingTopUp" class="mt-3 grid gap-3 sm:grid-cols-2" @submit.prevent="sendTopUp">
+          <div class="flex flex-col gap-1.5">
+            <label :class="labelClass" for="top-up-amount">{{ t('Amount') }}</label>
+            <input id="top-up-amount" v-model.number="topUpForm.amount" type="number" min="0.01" step="0.01" required :class="inputClass">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label :class="labelClass" for="top-up-note">{{ t('Note (optional)') }}</label>
+            <input id="top-up-note" v-model="topUpForm.note" type="text" maxlength="500" :class="inputClass">
+          </div>
+          <div class="flex flex-wrap items-center gap-2 sm:col-span-2">
+            <FileUploadButton v-model:busy="uploadingReceipt" purpose="TOP_UP_RECEIPT" accept="application/pdf,image/jpeg,image/png,image/webp" label="Attach a receipt" @uploaded="receipt = $event" />
+            <span v-if="receipt" class="text-xs text-white/45 light:text-slate-500">{{ receipt.fileName }}</span>
+            <button type="submit" class="ml-auto cursor-pointer rounded-[10px] border border-violet-500/40 bg-linear-to-br from-violet-600 to-indigo-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="sendingTopUp || uploadingReceipt || !(Number(topUpForm.amount) > 0)">{{ t('Send request') }}</button>
+          </div>
+        </form>
+        <p v-else-if="hasPendingTopUp" class="mt-3 text-xs text-amber-400 light:text-amber-700">{{ t('Your request is waiting for review.') }}</p>
+
+        <ul v-if="topUps.length" class="m-0 mt-3 flex list-none flex-col gap-1.5 p-0">
+          <li v-for="item in topUps" :key="item.id" class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/3 px-3 py-2 text-xs light:border-slate-200 light:bg-slate-50">
+            <span class="font-semibold text-slate-100 light:text-slate-900">{{ formatMoney(item.amount, item.currency) }}</span>
+            <span class="text-white/50 light:text-slate-500">{{ t(topUpLabels[item.status]) }}<template v-if="item.reviewNote">: {{ item.reviewNote }}</template></span>
+          </li>
+        </ul>
+      </section>
     </div>
 
     <!-- Waiting for review -->
@@ -83,7 +112,8 @@
 
 <script setup lang="ts">
 import { Clock, CreditCard, Loader2 } from 'lucide-vue-next'
-import type { MemberCardApplicationForm, MemberCardTransaction } from '~/types'
+import type { MemberCardApplicationForm, MemberCardTopUp, MemberCardTransaction, StoredFile } from '~/types'
+import FileUploadButton from '~/components/shared/FileUploadButton.vue'
 import MemberCardHistory from '~/components/membercard/MemberCardHistory.vue'
 import { formatMoney } from '~/composables/useCart'
 import { useAppToast } from '~/composables/useAppToast'
@@ -94,7 +124,7 @@ const { t } = useT()
 useHead({ title: () => t('Member Card') })
 
 const toast = useAppToast()
-const { fetchMine, fetchMyTransactions, apply } = useMemberCard()
+const { fetchMine, fetchMyTransactions, fetchMyTopUps, requestTopUp, apply } = useMemberCard()
 
 const labelClass = 'text-[11px] font-semibold tracking-wider text-white/60 uppercase light:text-slate-600'
 const inputClass = 'w-full rounded-[10px] border border-white/10 bg-white/4 px-3.5 py-2.5 text-[13px] text-slate-100 outline-none transition-all duration-200 placeholder:text-white/30 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/15 light:border-slate-300 light:bg-white light:text-slate-900 light:placeholder:text-slate-400'
@@ -104,10 +134,39 @@ const card = computed(() => data.value?.card ?? null)
 const application = computed(() => data.value?.application ?? null)
 
 const transactions = ref<MemberCardTransaction[]>([])
+const topUps = ref<MemberCardTopUp[]>([])
+const topUpLabels: Record<MemberCardTopUp['status'], string> = { PENDING: 'Waiting for review', APPROVED: 'Approved', REJECTED: 'Declined' }
+const hasPendingTopUp = computed(() => topUps.value.some(item => item.status === 'PENDING'))
+const topUpForm = reactive<{ amount: number | null, note: string }>({ amount: null, note: '' })
+const receipt = ref<StoredFile | null>(null)
+const uploadingReceipt = ref(false)
+const sendingTopUp = ref(false)
+
+async function sendTopUp() {
+  sendingTopUp.value = true
+  try {
+    topUps.value.unshift(await requestTopUp({
+      amount: Number(topUpForm.amount),
+      note: topUpForm.note.trim() || undefined,
+      receiptUrl: receipt.value?.url,
+      receiptName: receipt.value?.fileName
+    }))
+    topUpForm.amount = null
+    topUpForm.note = ''
+    receipt.value = null
+    toast.success(t('Request sent'), t('We\'ll notify you when it\'s reviewed.'))
+  } catch (err) {
+    toast.error(t('Request not sent'), getErrorMessage(err, t('Please try again.')))
+  } finally {
+    sendingTopUp.value = false
+  }
+}
 watch(() => card.value?.id, async (id) => {
   if (id === undefined) return
   try {
-    transactions.value = (await fetchMyTransactions(0, 50)).items
+    const [history, requests] = await Promise.all([fetchMyTransactions(0, 50), fetchMyTopUps()])
+    transactions.value = history.items
+    topUps.value = requests
   } catch (err) {
     toast.error(t('Unable to load your member card'), getErrorMessage(err, t('Please try again.')))
   }
